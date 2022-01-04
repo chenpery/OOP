@@ -2,8 +2,8 @@ package OOP.Tests;
 
 import OOP.Provided.OOPAssertionFailure;
 import OOP.Provided.OOPExpectedException;
-import Solution.*;
-import Solution.OOPTestClass;
+import OOP.Solution.*;
+import OOP.Solution.OOPTestClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

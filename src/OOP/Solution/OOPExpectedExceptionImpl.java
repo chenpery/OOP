@@ -1,4 +1,4 @@
-package Solution;
+package OOP.Solution;
 import OOP.Provided.OOPExpectedException;
 
 
@@ -76,6 +76,6 @@ public class OOPExpectedExceptionImpl implements OOPExpectedException {
      * So, if an exception is thrown, an OOPResult with ERROR should be returned
      */
     public static OOPExpectedExceptionImpl none() { //TODO
-        return null;
+        return new OOPExpectedExceptionImpl();
     }
 }

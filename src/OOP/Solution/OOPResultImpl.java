@@ -1,8 +1,6 @@
-package Solution;
+package OOP.Solution;
 
-import OOP.Provided.OOPAssertionFailure;
 import OOP.Provided.OOPResult;
-import java.lang.reflect.Method;
 
 public class OOPResultImpl implements OOPResult{
 

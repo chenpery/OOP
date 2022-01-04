@@ -1,12 +1,9 @@
-package Solution;
+package OOP.Solution;
 
 import OOP.Provided.OOPAssertionFailure;
 
 import java.lang.reflect.*;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.lang.Class;
-import java.util.*;
 
 public class OOPUnitCore {
 
@@ -35,7 +32,7 @@ public class OOPUnitCore {
             // invoke methods with OOPSetup annotation
             for(Method m : methods){
                 if(m.isAnnotationPresent(OOPSetup.class)){
-                    new_instance.invoke(m, null);
+                    m.invoke(new_instance, null);
                 }
             }
             /*
@@ -46,6 +43,14 @@ public class OOPUnitCore {
                 new_instance.invoke(m, null);
             }
            */
+
+            Method[] testMethods;
+            for(Method m : methods){
+                if(m.isAnnotationPresent(OOPTest.class)){
+                    int i = m.
+                }
+            }
+
             // invoke methods with OOPBefore annotation
             for(Method m : methods){
                 if(m.isAnnotationPresent(OOPBefore.class)){

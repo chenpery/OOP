@@ -1,8 +1,7 @@
-package Solution;
+package OOP.Solution;
 
 import OOP.Provided.OOPResult;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class OOPTestSummary {
