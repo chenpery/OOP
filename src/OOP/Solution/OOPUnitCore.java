@@ -1,14 +1,14 @@
 package OOP.Solution;
 
 import OOP.Provided.OOPAssertionFailure;
+import OOP.Provided.OOPExceptionMismatchError;
+import OOP.Provided.OOPResult;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.lang.Class;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class OOPUnitCore {
 
@@ -31,6 +31,8 @@ public class OOPUnitCore {
         if(testClass == null || (!testClass.isAnnotationPresent(OOPTestClass.class))) {
             throw new IllegalArgumentException();
         }
+        Map<String, OOPResult> mapResults = new HashMap<>();
+
         try {
             Object new_instance = testClass.getConstructor().newInstance();
 
@@ -39,8 +41,8 @@ public class OOPUnitCore {
             ArrayList<Method> afterMethods = new ArrayList<>();
 
             // collect OOPSetup, OOPBefore, OOPAfter methods from father to sun
-            Class<?> temp = new_instance.getClass();
-            while( temp != null){
+            Class<?> className = new_instance.getClass();
+            while( className != null){
                 Method[] methods = testClass.getDeclaredMethods(); // not including inherited methods
                 for(Method m : methods) {
                     if (m.isAnnotationPresent(OOPSetup.class)) {
@@ -53,7 +55,7 @@ public class OOPUnitCore {
                         afterMethods.add(m);
                     }
                 }
-                temp = temp.getSuperclass();
+                className = className.getSuperclass();
             }
 
 
@@ -95,45 +97,96 @@ public class OOPUnitCore {
                 m.invoke(testClass, null);
             }
 
+
+//            Stream<Method> streamBefore = beforeMethods.stream();
+//            Stream<Method> afterBefore = afterMethods.stream();
+//            Stream<Method> streamTest = testMethods.stream();
+//            streamTest = streamTest.map( m -> {})
+
+            // getting the OOPExceptionRule fields to check results later
+            Field[] fields = testClass.getDeclaredFields();
+            Field expectedException = null;
+            for (Field e: fields ) {
+                if (e.isAnnotationPresent(OOPExceptionRule.class)){
+                    expectedException = e;
+                    break;
+                }
+            }
+//            Stream<Field> streamExceptions = Arrays.stream(fields);
+//            streamExceptions = streamExceptions.filter(f -> f.isAnnotationPresent(OOPExceptionRule.class));
+
             // invoke OOPTest methods with OOPBefore & OOPAfter
             Collections.reverse(beforeMethods);
+            OOPResult result = null;
             for (Method m: testMethods) {
                 // invoke OOPBefore that include the current method m
                 for (Method bm: beforeMethods){
                     OOPBefore beforeAnnotation = bm.getAnnotation(OOPBefore.class);
                     String[] methodsArray = beforeAnnotation.value();
                     for (String str: methodsArray) {
-                        if (str == m.getName()){
+                        if (Objects.equals(str, m.getName())){
                             bm.invoke(testClass, null);
                             break;
                         }
                     }
                 }
-                // invoke current OOPTest method (m)
-                m.invoke(testClass, null);
+                try {
+                    // invoke current OOPTest method (m)
+                    m.invoke(testClass, null);
+                    result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
+                }
+                catch (OOPAssertionFailure e){
+                    result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
+                }
+                catch(Exception e){
+                    if (expectedException != null && expectedException.get(new OOPExpectedExceptionImpl()).equals(OOPExpectedExceptionImpl.none())){
+                        result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
+                    }
+                    else {
+                        if (expectedException != null) {
+                            OOPExpectedExceptionImpl f = (OOPExpectedExceptionImpl) expectedException.get(new OOPExpectedExceptionImpl());
+                            if (f.assertExpected(e)) {
+                                OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(f.getExpectedException(), e.getClass());
+                                result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
+                            }
+                        }
+                    }
+                }
                 // invoke OOPAfter that include the current method m
                 for (Method am: afterMethods){
                     OOPAfter afterAnnotation = am.getAnnotation(OOPAfter.class);
                     String[] methodsArray = afterAnnotation.value();
                     for (String str: methodsArray) {
-                        if (str == m.getName()){
+                        if (Objects.equals(str, m.getName())){
                             am.invoke(testClass, null);
                             break;
                         }
                     }
                 }
+                if (result != null){
+                    mapResults.put(m.getName(),result);
+                }
             }
 
+            return new OOPTestSummary(mapResults);
 
 
         } catch (InvocationTargetException e) {
+            System.out.println("InvocationTargetException");
             e.printStackTrace();
+            return new OOPTestSummary(mapResults);
         } catch (InstantiationException e) {
+            System.out.println("InstantiationException");
             e.printStackTrace();
+            return new OOPTestSummary(mapResults);
         } catch (IllegalAccessException e) {
+            System.out.println("IllegalAccessException");
             e.printStackTrace();
+            return new OOPTestSummary(mapResults);
         } catch (NoSuchMethodException e) {
+            System.out.println("NoSuchMethodException");
             e.printStackTrace();
+            return new OOPTestSummary(mapResults);
         }
     }
 
@@ -141,7 +194,6 @@ public class OOPUnitCore {
     public static OOPTestSummary runClass(Class<?> testClass) {
         return runClassHelper(testClass, null);
     }
-
 
     public static OOPTestSummary runClass(Class<?> testClass, String tag) {
         return runClassHelper(testClass, tag);

@@ -1,11 +1,13 @@
 package OOP.Solution;
 import OOP.Provided.OOPExpectedException;
+import OOP.Provided.OOPResult;
 
 
 public class OOPExpectedExceptionImpl implements OOPExpectedException {
 
     private Class<? extends Exception> expect_exception = null;
     private String message = "";
+
 
     /**
      * @return the expected exception type.
