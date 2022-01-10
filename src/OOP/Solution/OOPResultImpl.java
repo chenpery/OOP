@@ -9,7 +9,7 @@ public class OOPResultImpl implements OOPResult{
 
 
     /***** constructor ***********/
-    OOPResultImpl(OOPTestResult r, String msg){
+    public OOPResultImpl(OOPTestResult r, String msg){
         this.res = r;
         this.message = msg;
     }

@@ -97,7 +97,6 @@ public class OOPUnitCore {
                 className = className.getSuperclass();
             }
 
-
             // collecting (and ordering) the Test-methods (with/without tag)
             OOPTestClass classAnnotation = testClass.getAnnotation(OOPTestClass.class);
             OOPTestClass.OOPTestClassType ordered = OOPTestClass.OOPTestClassType.UNORDERED;
