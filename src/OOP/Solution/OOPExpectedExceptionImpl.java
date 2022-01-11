@@ -58,12 +58,18 @@ public class OOPExpectedExceptionImpl implements OOPExpectedException {
      */
     @Override
     public boolean assertExpected(Exception e){
+        if(e == null) return false;
         //at first, e will be warped with InvocationTargetException
-        Throwable noWarper = e.getCause(); // now we have the real exception the method threw
-        Class<?> expClass = noWarper.getClass();
+//        Throwable noWarper = e.getCause(); // now we have the real exception the method threw
+
+        Class<?> expClass = e.getClass();
         while( expClass != null){
             if( expClass == this.expect_exception){
-                if(noWarper.getMessage().contains(this.message)){
+                if(e.getMessage() == null){
+                    if(this.message == "") return true;
+                    else return false;
+                }
+                if(e.getMessage().contains(this.message)){
                     return true;
                 }
             }

@@ -3,6 +3,7 @@ package OOP.Solution;
 import OOP.Provided.OOPAssertionFailure;
 import OOP.Provided.OOPExceptionMismatchError;
 import OOP.Provided.OOPResult;
+import OOP.Provided.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -151,87 +152,102 @@ public class OOPUnitCore {
 
 
             // invoke OOPTest methods with OOPBefore & OOPAfter
+            boolean failed_before_after = false;
             Collections.reverse(beforeMethods);
             OOPResult result = null;
             for (Method m: testMethods.values()) {
                 // invoke OOPBefore that include the current method m
-                for (Method bm: beforeMethods){
+                for (Method bm : beforeMethods) {
+                    if (failed_before_after) break;
                     OOPBefore beforeAnnotation = bm.getAnnotation(OOPBefore.class);
                     String[] methodsArray = beforeAnnotation.value();
-                    for (String str: methodsArray) {
-                        if (Objects.equals(str, m.getName())){
-                             //backup the fields of new_instance (the object of our tested class) before invoking OOPBefore
+                    for (String str : methodsArray) {
+                        if (Objects.equals(str, m.getName())) {
+                            //backup the fields of new_instance (the object of our tested class) before invoking OOPBefore
                             ArrayList<Object> backedFields = backupFileds(new_instance, fields);
                             try {
                                 bm.invoke(new_instance, null);
                                 break;
-                            }
-                            catch(Exception e){ // OOPBefore  method failed so need to restore the value of field
-                                for (int j = 0; j< fields.length; j++) {
-                                    fields[j].set(new_instance,(backedFields.get(j)));
+                            } catch (Exception e) { // OOPBefore  method failed so need to restore the value of field
+                                for (int j = 0; j < fields.length; j++) {
+                                    fields[j].set(new_instance, (backedFields.get(j)));
                                 }
-                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, "");
-                                mapResults.put(m.getName(),result);
+                                failed_before_after = true;
+                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().getName());
                                 break;
                                 // I think there should be another break for the outer loop (for the bm method)
                             }
                         }
                     }
                 }
-                try {
-                    // invoke current OOPTest method (m)
-                    m.invoke(new_instance, null);
-                    result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
-                }
-                catch (OOPAssertionFailure e){
-                    result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
-                }
-                catch(Exception e) {
-                    if (OOPAssertionFailure.class.equals(e.getCause().getClass())) {
-                        result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
-                    } else {
-                        if (expectedException != null) {
-                            expectedException.setAccessible(true);
 
-                            OOPExpectedExceptionImpl err = (OOPExpectedExceptionImpl) expectedException.get(new_instance);
+                if(failed_before_after) {
+                    mapResults.put(m.getName(), result);
+                }
+                else {
+                    try {
+                        // invoke current OOPTest method (m)
+                        m.invoke(new_instance, null);
+                        result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
+                        mapResults.put(m.getName(), result);
+                    } catch (OOPAssertionFailure e) {
+                        result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
+                        mapResults.put(m.getName(), result);
+                    } catch (Exception e) {
+                        if (expectedException != null) {
+                            OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
                             if (err.getExpectedException() == null) {
                                 result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
                             } else {
-//                            OOPExpectedExceptionImpl f = (OOPExpectedExceptionImpl) expectedException.get(new_instance);
-                                if (!err.assertExpected(e)) {
-                                    OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), e.getClass());
-                                    result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
-                                } else{
+                                if(expectedException.getType() == OOPExpectedException.class && err.assertExpected(e)){
                                     result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
                                 }
-                            }
-                        }
-                    }
-                }
-                // invoke OOPAfter that include the current method m
-                for (Method am: afterMethods){
-                    OOPAfter afterAnnotation = am.getAnnotation(OOPAfter.class);
-                    String[] methodsArray = afterAnnotation.value();
-                    for (String str: methodsArray) {
-                        if (Objects.equals(str, m.getName())){
-                            //backup the fields of new_instance (the object of our tested class) before invoking OOPBefore
-                            ArrayList<Object> backedFields = backupFileds(new_instance, fields);
-                            try {
-                                am.invoke(new_instance, null);
-                                break;
-                            }
-                            catch(Exception e){ // OOPBefore  method failed so need to restore the value of field
-                                for (int j = 0; j< fields.length; j++) {
-                                    fields[j].set(new_instance,(backedFields.get(j)));
+                                else{
+                                    OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), e.getClass());
+                                    result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
                                 }
-                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, "");
-                                mapResults.put(m.getName(),result);
-                                break;
-                                // I think there should be another break for the outer loop (for the am loop)
+//                                if (err.getExpectedException() != e.getClass() || !err.assertExpected(e)) {
+//                                    OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), e.getClass());
+//                                    result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
+//                                    mapResults.put(m.getName(), result);
+//                                } else {
+//                                    result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
+//                                    mapResults.put(m.getName(), result);
+//                                }
+                            }
+                        }
+                        else{
+                            result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
+                        }
+
+                    }
+                }
+                    // invoke OOPAfter that include the current method m
+                    for (Method am : afterMethods) {
+                        if(failed_before_after) break;
+                        OOPAfter afterAnnotation = am.getAnnotation(OOPAfter.class);
+                        String[] methodsArray = afterAnnotation.value();
+                        for (String str : methodsArray) {
+                            if (Objects.equals(str, m.getName())) {
+                                //backup the fields of new_instance (the object of our tested class) before invoking OOPBefore
+                                ArrayList<Object> backedFields = backupFileds(new_instance, fields);
+                                try {
+                                    am.invoke(new_instance, null);
+
+                                    break;
+                                } catch (Exception e) { // OOPBefore  method failed so need to restore the value of field
+                                    for (int j = 0; j < fields.length; j++) {
+                                        fields[j].set(new_instance, (backedFields.get(j)));
+                                    }
+                                    result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, "");
+                                    failed_before_after = true;
+                                    break;
+                                    // I think there should be another break for the outer loop (for the am loop)
+                                }
                             }
                         }
                     }
-                }
+
                 if (result != null){
                     mapResults.put(m.getName(),result);
                 }
