@@ -651,6 +651,10 @@ public class Cases {
     public void testExpectedException2() {
         result = OOPUnitCore.runClass(ExpectedException2.class);
         assertNotNull(result);
+        System.out.print(result.getNumSuccesses());
+        System.out.print(result.getNumFailures());
+        System.out.print(result.getNumErrors());
+        System.out.print(result.getNumExceptionMismatches());
         assertEquals(2, result.getNumSuccesses());
         assertEquals(2, result.getNumFailures());
         assertEquals(2, result.getNumErrors());
