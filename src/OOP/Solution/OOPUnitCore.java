@@ -19,7 +19,10 @@ public class OOPUnitCore {
 
     /* if the input objects is not equal throw exception*/
     public static void assertEquals(Object expected, Object actual) {
-        if (!expected.equals(actual)) {
+        if (expected != null && !expected.equals(actual)) {
+            throw new OOPAssertionFailure(expected, actual);
+        }
+        if(expected == null && actual != null){
             throw new OOPAssertionFailure(expected, actual);
         }
     }
@@ -147,10 +150,11 @@ public class OOPUnitCore {
 
 
             // invoke OOPTest methods with OOPBefore & OOPAfter
-            boolean failed_before_after = false;
+
             Collections.reverse(beforeMethods);
-            OOPResult result = null;
             for (Method m : testMethods.values()) {
+                OOPResult result = null;
+                boolean failed_before_after = false;
                 // invoke OOPBefore that include the current method m
                 for (Method bm : beforeMethods) {
                     if (failed_before_after) break;
@@ -178,7 +182,10 @@ public class OOPUnitCore {
 
                 if (failed_before_after) {
                     mapResults.put(m.getName(), result);
+//                    new_instance = ctor.newInstance();
+//                    break;
                 } else {
+                    failed_before_after = false;
                     try {
                         // invoke current OOPTest method (m)
                         m.invoke(new_instance, null);
@@ -192,7 +199,6 @@ public class OOPUnitCore {
                         Class<?> expClass = noWarper.getClass();
                         if (expClass.equals(OOPAssertionFailure.class)) {
                             result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
-                            mapResults.put(m.getName(), result);
                         } else {
                             if (expectedException != null) {
                                 OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
@@ -218,9 +224,11 @@ public class OOPUnitCore {
                                 result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
                             }
                         }
-
+                        failed_before_after = true;
+                        mapResults.put(m.getName(), result);
                     }
                 }
+
                 // invoke OOPAfter that include the current method m
                 for (Method am : afterMethods) {
                     if (failed_before_after) break;
@@ -247,11 +255,10 @@ public class OOPUnitCore {
                     }
                 }
 
-                if (result != null) {
+                if(result != null && failed_before_after) {
                     mapResults.put(m.getName(), result);
                 }
             }
-
             return new OOPTestSummary(mapResults);
 
 
