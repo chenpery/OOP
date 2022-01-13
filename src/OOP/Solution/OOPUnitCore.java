@@ -169,6 +169,8 @@ public class OOPUnitCore {
                     break;
                 }
             }
+            OOPExpectedException err = null;
+            if (expectedException != null) err = (OOPExpectedException) expectedException.get(new_instance);
 
 
             // invoke OOPTest methods with OOPBefore & OOPAfter
@@ -176,8 +178,8 @@ public class OOPUnitCore {
             Collections.reverse(beforeMethods);
             for (Method m : testMethods.values()) {
 
-//                OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
-//                err = OOPExpectedExceptionImpl.none();
+//                err = err.expect(null);
+//                err = err.expectMessage("");
 
                 OOPResult result = null;
                 boolean failed_before_after = false;
@@ -210,26 +212,25 @@ public class OOPUnitCore {
                     mapResults.put(m.getName(), result);
                 } else {
                     failed_before_after = false;
+
                     try {
                         // invoke current OOPTest method (m)
-//                        boolean expectedWasNull = (((OOPExpectedException) expectedException.get(new_instance)).getExpectedException() == null);
                         m.invoke(new_instance, null);
-//                        OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
-//                        if (err.getExpectedException() == null ) {
+                        if ( (err != null && err.getExpectedException() == null) || err == null) {
                             result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
                             mapResults.put(m.getName(), result);
-//                        } else {
-//                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, err.getExpectedException().getName());
-//                                mapResults.put(m.getName(), result);
-//                        }
+                        } else {
+                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, err.getExpectedException().getName());
+                                mapResults.put(m.getName(), result);
+                        }
                     } catch (Exception e) {
                         Throwable noWarper = e.getCause(); // now we have the real exception the method threw
                         Class<?> expClass = noWarper.getClass();
                         if (expClass.equals(OOPAssertionFailure.class)) {
                             result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
                         } else {
-                            if (expectedException != null) {
-                                OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
+                            if (err != null) {
+                                err = (OOPExpectedException) expectedException.get(new_instance);
                                 if (err.getExpectedException() == null) {
                                     result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, expClass.toString());
                                 } else {
@@ -249,7 +250,7 @@ public class OOPUnitCore {
 //                                }
                                 }
                             } else {
-                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
+                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, expClass.toString());
                             }
                         }
 //                        failed_before_after = true;
