@@ -718,6 +718,10 @@ public class Cases {
     public void testExpectedException3() {
         result = OOPUnitCore.runClass(ExpectedException3.class);
         assertNotNull(result);
+        System.out.print(result.getNumSuccesses());
+        System.out.print(result.getNumFailures());
+        System.out.print(result.getNumErrors());
+        System.out.print(result.getNumExceptionMismatches());
         assertEquals(2, result.getNumSuccesses());
         assertEquals(0, result.getNumFailures());
         assertEquals(2, result.getNumErrors());

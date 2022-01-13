@@ -28,6 +28,15 @@ public class BaseTest {
         } else {
             result = OOPUnitCore.runClass(c, tag);
         }
+        System.out.print(successes);
+        System.out.print(failures);
+        System.out.print(errors);
+        System.out.print(mismatches);
+        System.out.print("----");
+        System.out.print(result.getNumSuccesses());
+        System.out.print(result.getNumFailures());
+        System.out.print(result.getNumErrors());
+        System.out.print(result.getNumExceptionMismatches());
         Assert.assertNotNull(result);
         Assert.assertEquals(successes, result.getNumSuccesses());
         Assert.assertEquals(failures, result.getNumFailures());

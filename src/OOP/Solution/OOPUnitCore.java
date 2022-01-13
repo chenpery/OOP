@@ -177,10 +177,10 @@ public class OOPUnitCore {
 //            boolean expectedExc_wasNull = false;
             Collections.reverse(beforeMethods);
             for (Method m : testMethods.values()) {
-
-//                err = err.expect(null);
-//                err = err.expectMessage("");
-
+                if(err != null) {
+                    err = err.expect(null);
+                    err = err.expectMessage("");
+                }
                 OOPResult result = null;
                 boolean failed_before_after = false;
                 // invoke OOPBefore that include the current method m
@@ -234,7 +234,7 @@ public class OOPUnitCore {
                                 if (err.getExpectedException() == null) {
                                     result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, expClass.toString());
                                 } else {
-                                    if (expectedException.getType() == OOPExpectedException.class && err.assertExpected((Exception) noWarper)) {
+                                    if (err.assertExpected((Exception) noWarper)) {
                                         result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
                                     } else {
                                         OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), (Class<? extends Exception>) expClass);
@@ -315,6 +315,7 @@ public class OOPUnitCore {
     }
 
     public static OOPTestSummary runClass(Class<?> testClass, String tag) {
+        if(tag == null) throw new IllegalArgumentException();
         return runClassHelper(testClass, tag);
     }
 
