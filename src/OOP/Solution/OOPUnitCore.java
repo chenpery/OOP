@@ -92,8 +92,7 @@ public class OOPUnitCore {
             //while (className != null) {
 //                Method[] methods = className.getDeclaredMethods(); // not including inherited methods
                 Method[] methods = className.getMethods();
-                int i;
-                int k = methods.length + 1;
+                int k = 1;
                 for (Method m : methods) {
                         if (m.isAnnotationPresent(OOPSetup.class)) {
 //                            if (!setupMethods.contains(m)) {
@@ -119,7 +118,8 @@ public class OOPUnitCore {
 //                            if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, ordered)) {
                                 if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, currentClassOrdered)) {
                                     // get the right order for the method
-                                    i = annotation.order();
+                                    int i = methods.length + 1;
+                                    i += annotation.order();
                                     if (tag == null) {
                                         temp.put(i, m);
                                     } else {
@@ -175,6 +175,10 @@ public class OOPUnitCore {
 //            boolean expectedExc_wasNull = false;
             Collections.reverse(beforeMethods);
             for (Method m : testMethods.values()) {
+
+//                OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
+//                err = OOPExpectedExceptionImpl.none();
+
                 OOPResult result = null;
                 boolean failed_before_after = false;
                 // invoke OOPBefore that include the current method m
@@ -208,9 +212,16 @@ public class OOPUnitCore {
                     failed_before_after = false;
                     try {
                         // invoke current OOPTest method (m)
+//                        boolean expectedWasNull = (((OOPExpectedException) expectedException.get(new_instance)).getExpectedException() == null);
                         m.invoke(new_instance, null);
+//                        OOPExpectedException err = (OOPExpectedException) expectedException.get(new_instance);
+//                        if (err.getExpectedException() == null ) {
                             result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
                             mapResults.put(m.getName(), result);
+//                        } else {
+//                                result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, err.getExpectedException().getName());
+//                                mapResults.put(m.getName(), result);
+//                        }
                     } catch (Exception e) {
                         Throwable noWarper = e.getCause(); // now we have the real exception the method threw
                         Class<?> expClass = noWarper.getClass();
