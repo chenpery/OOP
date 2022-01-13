@@ -87,17 +87,12 @@ public class OOPUnitCore {
             if (classAnnotation != null) {
                 ordered = classAnnotation.value();
             }
-//            int i = 1;
             Map<Integer, Method> temp = new HashMap<>();
-            //while (className != null) {
-//                Method[] methods = className.getDeclaredMethods(); // not including inherited methods
                 Method[] methods = className.getMethods();
                 int k = 1;
                 for (Method m : methods) {
                         if (m.isAnnotationPresent(OOPSetup.class)) {
-//                            if (!setupMethods.contains(m)) {
                                 setupMethods.add(m);
-//                            }
                             continue;
                         }
                         if (m.isAnnotationPresent(OOPBefore.class)) {
@@ -115,7 +110,6 @@ public class OOPUnitCore {
                                 if (m.getDeclaringClass().getAnnotation(OOPTestClass.class) != null){
                                     currentClassOrdered = m.getDeclaringClass().getAnnotation(OOPTestClass.class).value();
                                 }
-//                            if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, ordered)) {
                                 if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, currentClassOrdered)) {
                                     // get the right order for the method
                                     int i = methods.length + 1;
@@ -145,8 +139,7 @@ public class OOPUnitCore {
                             }
                         }
                 }
-                //className = className.getSuperclass();
-            //}
+
             Stream<Map.Entry<Integer, Method>> stream = temp.entrySet().stream().sorted(Map.Entry.comparingByKey());
             Map<Integer, Method> testMethods = stream.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
@@ -159,24 +152,22 @@ public class OOPUnitCore {
             }
 
 
-            // getting the OOPExceptionRule fields to check results later
-            Field[] fields = testClass.getDeclaredFields();
-            Field expectedException = null;
-            for (Field f : fields) {
-                if (f.isAnnotationPresent(OOPExceptionRule.class)) {
-                    expectedException = f;
-                    expectedException.setAccessible(true);
-                    break;
-                }
-            }
-            OOPExpectedException err = null;
-            if (expectedException != null) err = (OOPExpectedException) expectedException.get(new_instance);
-
-
-            // invoke OOPTest methods with OOPBefore & OOPAfter
-//            boolean expectedExc_wasNull = false;
             Collections.reverse(beforeMethods);
             for (Method m : testMethods.values()) {
+
+
+                Field[] fields = testClass.getDeclaredFields();
+                Field expectedException = null;
+                for (Field f : fields) {
+                    if (f.isAnnotationPresent(OOPExceptionRule.class)) {
+                        expectedException = f;
+                        expectedException.setAccessible(true);
+                        break;
+                    }
+                }
+                OOPExpectedException err = null;
+                if (expectedException != null) err = (OOPExpectedException) expectedException.get(new_instance);
+
                 if(err != null) {
                     err = err.expect(null);
                     err = err.expectMessage("");
@@ -202,7 +193,6 @@ public class OOPUnitCore {
                                 failed_before_after = true;
                                 result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().getName());
                                 break;
-                                // I think there should be another break for the outer loop (for the bm method)
                             }
                         }
                     }
@@ -216,6 +206,21 @@ public class OOPUnitCore {
                     try {
                         // invoke current OOPTest method (m)
                         m.invoke(new_instance, null);
+
+
+                        fields = testClass.getDeclaredFields();
+                        expectedException = null;
+                        for (Field f : fields) {
+                            if (f.isAnnotationPresent(OOPExceptionRule.class)) {
+                                expectedException = f;
+                                expectedException.setAccessible(true);
+                                break;
+                            }
+                        }
+                        err = null;
+                        if (expectedException != null) err = (OOPExpectedException) expectedException.get(new_instance);
+
+
                         if ( (err != null && err.getExpectedException() == null) || err == null) {
                             result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
                             mapResults.put(m.getName(), result);
@@ -240,20 +245,11 @@ public class OOPUnitCore {
                                         OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), (Class<? extends Exception>) expClass);
                                         result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
                                     }
-//                                if (err.getExpectedException() != e.getClass() || !err.assertExpected(e)) {
-//                                    OOPExceptionMismatchError mismatch = new OOPExceptionMismatchError(err.getExpectedException(), e.getClass());
-//                                    result = new OOPResultImpl(OOPResult.OOPTestResult.EXPECTED_EXCEPTION_MISMATCH, mismatch.getMessage());
-//                                    mapResults.put(m.getName(), result);
-//                                } else {
-//                                    result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
-//                                    mapResults.put(m.getName(), result);
-//                                }
                                 }
                             } else {
                                 result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, expClass.toString());
                             }
                         }
-//                        failed_before_after = true;
                         mapResults.put(m.getName(), result);
                     }
                 }
@@ -315,7 +311,7 @@ public class OOPUnitCore {
     }
 
     public static OOPTestSummary runClass(Class<?> testClass, String tag) {
-        if(tag == null) throw new IllegalArgumentException();
+        if (tag == null) throw new IllegalArgumentException();
         return runClassHelper(testClass, tag);
     }
 
