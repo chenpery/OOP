@@ -22,7 +22,7 @@ public class OOPUnitCore {
         if (expected != null && !expected.equals(actual)) {
             throw new OOPAssertionFailure(expected, actual);
         }
-        if(expected == null && actual != null){
+        if (expected == null && actual != null){
             throw new OOPAssertionFailure(expected, actual);
         }
     }
@@ -47,7 +47,7 @@ public class OOPUnitCore {
                 } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e1) { // no clone method or it failed
                     //try to use copy c'tor
                     try {
-                        Constructor<?> ctorMethod = fValueClass.getConstructor(fValueClass);
+                        Constructor<?> ctorMethod = fValueClass.getDeclaredConstructor(fValueClass);
                         ctorMethod.setAccessible(true);
                         copy = ctorMethod.newInstance(fValue);
                     } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e2) {
@@ -71,7 +71,7 @@ public class OOPUnitCore {
         Map<String, OOPResult> mapResults = new HashMap<>();
 
         try {
-            Constructor<?> ctor = testClass.getConstructor();
+            Constructor<?> ctor = testClass.getDeclaredConstructor();
             ctor.setAccessible(true);
             Object new_instance = ctor.newInstance();
 
@@ -87,45 +87,66 @@ public class OOPUnitCore {
             if (classAnnotation != null) {
                 ordered = classAnnotation.value();
             }
-            int i = 1;
+//            int i = 1;
             Map<Integer, Method> temp = new HashMap<>();
-            while (className != null) {
-                Method[] methods = className.getDeclaredMethods(); // not including inherited methods
+            //while (className != null) {
+//                Method[] methods = className.getDeclaredMethods(); // not including inherited methods
+                Method[] methods = className.getMethods();
+                int i;
+                int k = methods.length + 1;
                 for (Method m : methods) {
-                    if (m.isAnnotationPresent(OOPSetup.class)) {
-                        setupMethods.add(m);
-                        continue;
-                    }
-                    if (m.isAnnotationPresent(OOPBefore.class)) {
-                        beforeMethods.add(m);
-                        continue;
-                    }
-                    if (m.isAnnotationPresent(OOPAfter.class)) {
-                        afterMethods.add(m);
-                        continue;
-                    }
-                    if (m.isAnnotationPresent(OOPTest.class)) {
-                        OOPTest annotation = m.getAnnotation(OOPTest.class);
-                        if (annotation != null) {
-                            if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, ordered)) {
-                                // get the right order for the method
-                                i = annotation.order();
-                            }
-                            if (tag == null) {
-                                temp.put(i, m); //if not ordered, we have the initial i = 0
-                            } else {
-                                // get only tagged methods
-                                String thisMethodTag = annotation.tag();
-                                if (thisMethodTag.contains(tag)) {
-                                    temp.put(i, m);
-                                }
-                            }
-                            i++;
+                        if (m.isAnnotationPresent(OOPSetup.class)) {
+//                            if (!setupMethods.contains(m)) {
+                                setupMethods.add(m);
+//                            }
+                            continue;
                         }
-                    }
+                        if (m.isAnnotationPresent(OOPBefore.class)) {
+                            beforeMethods.add(m);
+                            continue;
+                        }
+                        if (m.isAnnotationPresent(OOPAfter.class)) {
+                            afterMethods.add(m);
+                            continue;
+                        }
+                        if (m.isAnnotationPresent(OOPTest.class)) {
+                            OOPTest annotation = m.getAnnotation(OOPTest.class);
+                            if (annotation != null) {
+                                OOPTestClass.OOPTestClassType currentClassOrdered = OOPTestClass.OOPTestClassType.UNORDERED;
+                                if (m.getDeclaringClass().getAnnotation(OOPTestClass.class) != null){
+                                    currentClassOrdered = m.getDeclaringClass().getAnnotation(OOPTestClass.class).value();
+                                }
+//                            if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, ordered)) {
+                                if (Objects.equals(OOPTestClass.OOPTestClassType.ORDERED, currentClassOrdered)) {
+                                    // get the right order for the method
+                                    i = annotation.order();
+                                    if (tag == null) {
+                                        temp.put(i, m);
+                                    } else {
+                                        // get only tagged methods
+                                        String thisMethodTag = annotation.tag();
+                                        if (thisMethodTag.contains(tag)) {
+                                            temp.put(i, m);
+                                        }
+                                    }
+                                } else {
+                                    if (tag == null) {
+                                        temp.put(k, m); //if not ordered, we have the initial j = nethods.legnth + 1
+                                    } else {
+                                        // get only tagged methods
+                                        String thisMethodTag = annotation.tag();
+                                        if (thisMethodTag.contains(tag)) {
+                                            temp.put(k, m);
+                                        }
+                                    }
+                                    k++;
+                                }
+
+                            }
+                        }
                 }
-                className = className.getSuperclass();
-            }
+                //className = className.getSuperclass();
+            //}
             Stream<Map.Entry<Integer, Method>> stream = temp.entrySet().stream().sorted(Map.Entry.comparingByKey());
             Map<Integer, Method> testMethods = stream.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
@@ -144,13 +165,14 @@ public class OOPUnitCore {
             for (Field f : fields) {
                 if (f.isAnnotationPresent(OOPExceptionRule.class)) {
                     expectedException = f;
+                    expectedException.setAccessible(true);
                     break;
                 }
             }
 
 
             // invoke OOPTest methods with OOPBefore & OOPAfter
-
+//            boolean expectedExc_wasNull = false;
             Collections.reverse(beforeMethods);
             for (Method m : testMethods.values()) {
                 OOPResult result = null;
@@ -182,18 +204,13 @@ public class OOPUnitCore {
 
                 if (failed_before_after) {
                     mapResults.put(m.getName(), result);
-//                    new_instance = ctor.newInstance();
-//                    break;
                 } else {
                     failed_before_after = false;
                     try {
                         // invoke current OOPTest method (m)
                         m.invoke(new_instance, null);
-                        result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
-                        mapResults.put(m.getName(), result);
-//                    } catch (OOPAssertionFailure e) {
-//                        result = new OOPResultImpl(OOPResult.OOPTestResult.FAILURE, e.getMessage());
-//                        mapResults.put(m.getName(), result);
+                            result = new OOPResultImpl(OOPResult.OOPTestResult.SUCCESS, null);
+                            mapResults.put(m.getName(), result);
                     } catch (Exception e) {
                         Throwable noWarper = e.getCause(); // now we have the real exception the method threw
                         Class<?> expClass = noWarper.getClass();
@@ -224,7 +241,7 @@ public class OOPUnitCore {
                                 result = new OOPResultImpl(OOPResult.OOPTestResult.ERROR, e.getClass().toString());
                             }
                         }
-                        failed_before_after = true;
+//                        failed_before_after = true;
                         mapResults.put(m.getName(), result);
                     }
                 }
@@ -254,7 +271,6 @@ public class OOPUnitCore {
                         }
                     }
                 }
-
                 if(result != null && failed_before_after) {
                     mapResults.put(m.getName(), result);
                 }
